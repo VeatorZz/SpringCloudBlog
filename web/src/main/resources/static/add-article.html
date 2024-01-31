@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>添加文章</title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+</head>
+<body>
+
+<div>
+    <header class="editor-header">
+        <input id="title" class="input is-shadowless is-radiusless" autofocus="autofocus" type="text"
+               placeholder="输入文章标题...">
+        <div class="right-box">
+            <div class="select is-small">
+                <select id="category">
+                    <option value="0" disabled="disabled">分类</option>
+                </select>
+            </div>
+            <button type="button" class="button is-small is-primary" onclick="doAddArt()">发布</button>
+        </div>
+    </header>
+    <div id="editor">
+        <textarea name="content" class="input" name="content"></textarea>
+        <div class="show content markdown-body"></div>
+    </div>
+</div>
+<nav class="navbar has-shadow">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="index.html">
+            返回
+        </a>
+    </div>
+</nav>
+
+<script src="js/marked.min.js"></script>
+<script>
+    $(function () {
+        if ($('.notifications')) {
+            setTimeout(function () {
+                $('.notifications').fadeOut()
+            }, 2000)
+        }
+    });
+
+    var input = $('#editor .input')
+    $('#editor .show').html(marked(input.val()))
+    input.on('input', function () {
+        $('#editor .show').html(marked($(this).val(), {sanitize: true}))
+    })
+
+    // 加载文章分类列表
+    function initCategory() {
+        jQuery.ajax({
+            url: req_base_url + "category/list",
+            method: "GET",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {},
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200) {
+                    // 成功
+                    var listHtml = "";
+                    for (var i = 0; i < res.data.length; i++) {
+                        var category = res.data[i];
+                        listHtml += '<option value="' + category.cid + '">' +
+                            category.name + '</option>';
+                    }
+                    jQuery("#category").append(listHtml);
+                } else {
+                    // 失败
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    initCategory();
+
+    // 文章添加方法
+    function doAddArt() {
+        // 1.非空效验
+        var title = jQuery("#title");
+        if (title.val().trim() == "") {
+            alert("请先输入标题！");
+            title.focus();
+            return false;
+        }
+        if (input.val() == "") {
+            alert("请先输入正文！");
+            return false;
+        }
+        var cid = jQuery("#category").val();
+        if (cid == null || cid == "" || cid == "0") {
+            alert("请先文章分类！");
+            return false;
+        }
+        // 2.请求后端接口
+        jQuery.ajax({
+            url: req_base_url + "art/add",
+            method: "POST",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {
+                "title":title.val(),
+                "content":input.val(),
+                "cid":cid
+            },
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200 && res.data) {
+                    // 成功
+                    alert("恭喜：文章添加成功！");
+                    location.href = "index.html";
+                } else {
+                    // 失败
+                    alert("抱歉：文章添加失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+server:
+  port: 0
+spring:
+  cloud:
+    nacos: # 配置中心
+      config:
+        username: nacos
+        password: nacos
+        context-path: /nacos
+        server-addr: localhost:8848
+        file-extension: yml
+      discovery: # 注册中心
+        username: nacos
+        password: nacos
+        server-addr: localhost:8848
+  config:
+    import: nacos:comment-service-blog
+

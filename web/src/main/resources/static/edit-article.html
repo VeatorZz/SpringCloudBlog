@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/urlutil.js"></script>
+</head>
+<body>
+<div>
+    <header class="editor-header">
+        <input id="title" value="" class="input is-shadowless is-radiusless" type="text" placeholder="输入文章标题...">
+        <div class="right-box">
+            <div class="select is-small">
+                <select id="category">
+                    <option disabled="disabled">分类</option>
+                </select>
+            </div>
+            <button type="button" class="button is-small is-primary" onclick="doUpdate()">更新</button>
+        </div>
+    </header>
+    <div id="editor">
+        <textarea autofocus="autofocus" name="content" class="input" name="content"></textarea>
+        <div class="show content markdown-body"></div>
+    </div>
+</div>
+<nav class="navbar has-shadow">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="index.html">
+            返回
+        </a>
+    </div>
+</nav>
+<script src="js/marked.min.js"></script>
+<script>
+    var input = $('#editor .input');
+    $('#editor .show').html(marked(input.val()));
+    input.on('input', function () {
+        $('#editor .show').html(marked($(this).val(), {sanitize: true}))
+    });
+
+    // 加载文章分类列表
+    function initCategory() {
+        jQuery.ajax({
+            url: req_base_url + "category/list",
+            method: "GET",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {},
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200) {
+                    // 成功
+                    var listHtml = "";
+                    for (var i = 0; i < res.data.length; i++) {
+                        var category = res.data[i];
+                        listHtml += '<option value="' + category.cid + '">' +
+                            category.name + '</option>';
+                    }
+                    jQuery("#category").append(listHtml);
+                } else {
+                    // 失败
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    initCategory();
+
+    // 获取当前 URL 中的文章 ID
+    var aid = getUrlParam("aid");
+
+    // 加载文章详情信息
+    function initArt() {
+        if (aid == null || aid <= 0) {
+            alert("参数有误！");
+            return false;
+        }
+        jQuery.ajax({
+            url: req_base_url + "art/getbyid",
+            method: "GET",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {
+                "aid": aid
+            },
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200 && res.data != null
+                    && res.data.aid >= 0) {
+                    // 成功
+                    jQuery("#title").val(res.data.title);
+                    input.val(res.data.content);
+                    jQuery("#category").val(res.data.cid);
+                    $('#editor .show').html(marked(res.data.content));
+                } else {
+                    // 失败
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    initArt();
+
+    // 执行文章的修改
+    function doUpdate() {
+        // 1.非空效验
+        var title = jQuery("#title");
+        if (title.val().trim() == "") {
+            alert("请先输入标题！");
+            title.focus();
+            return false;
+        }
+        if (input.val() == "") {
+            alert("请先输入正文！");
+            return false;
+        }
+        var cid = jQuery("#category").val();
+        if (cid == null || cid == "" || cid == "0") {
+            alert("请先文章分类！");
+            return false;
+        }
+        // 2.请求后端接口
+        jQuery.ajax({
+            url: req_base_url + "art/update",
+            method: "POST",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {
+                "aid": aid,
+                "title": title.val(),
+                "content": input.val(),
+                "cid": cid
+            },
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200 && res.data) {
+                    // 成功
+                    alert("恭喜：文章修改成功！");
+                    location.href = "detail.html?aid=" + aid;
+                } else {
+                    // 失败
+                    alert("抱歉：文章修改失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+</script>
+</body>
+</html>

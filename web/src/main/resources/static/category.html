@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>分类列表</title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/loginutil.js"></script>
+</head>
+<body>
+
+<nav id="navbar" class="navbar has-shadow">
+    <div class="container">
+        <div class="navbar-brand">
+            <div class="navbar-burger burger" data-target="navMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div id="navMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="index.html">主页</a>
+                <a class="navbar-item" href="about.html">关于</a>
+            </div>
+            <div class="navbar-end">
+                <div id="login_div" style="display: none;" class="navbar-item">
+                    <a id="category_href" style="display: none" class="button is-small is-primary" href="category.html">分类管理</a>&nbsp;&nbsp;&nbsp;
+                    <a class="button is-small is-primary" href="add-article.html">写文章</a>&nbsp;&nbsp;&nbsp;
+                    <a id="login_username" href="user-articlelist.html"></a>&nbsp;&nbsp;&nbsp;
+                    <a href="javascript:logout();">退出</a>
+                </div>
+                <div id="unlogin_div" class="navbar-item">
+                    <a class="button is-small is-primary" href="register.html">注册</a>&nbsp;&nbsp;&nbsp
+                    <a class="button is-small" href="login.html">登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+<script>
+    jQuery(function () {
+        var login_username = window.localStorage.getItem("username");
+        if (login_username == null) {
+            // 未登录
+            jQuery("#unlogin_div").show();
+        } else { // 已经登录
+            jQuery("#unlogin_div").hide();
+            jQuery("#login_username").html(login_username);
+            jQuery("#login_username").attr("href", "user-articlelist.html?uid=" +
+                window.localStorage.getItem("uid"));
+            jQuery("#login_div").show();
+            // 管理员权限判断
+            if (window.localStorage.getItem("manager") == 1) {
+                jQuery("#category_href").show();
+            }
+        }
+    });
+</script>
+
+<div class="container margin-top">
+    <div class="columns">
+        <div class="column is-8 is-offset-2">
+            <a href="add-category.html" class="button is-small is-primary">新建分类</a>
+            <table class="table margin-top is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+                <thead>
+                <tr>
+                    <th>分类名</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="list-tbody">
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    // 加载分类列表
+    function initList() {
+        jQuery.ajax({
+            url: req_base_url + "category/list",
+            method: "GET",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {},
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200) {
+                    // 成功
+                    var listHtml = "";
+                    for (var i = 0; i < res.data.length; i++) {
+                        var category = res.data[i];
+                        listHtml += '<tr>';
+                        listHtml += '<td>' + category.name + '</td>';
+                        listHtml += '<td>';
+                        listHtml += '<a href="javascript:doDel(' + category.cid
+                            + ');" class="button is-small is-danger">删除</a>';
+                        listHtml += '</td>';
+                        listHtml += '</tr>';
+                    }
+                    jQuery("#list-tbody").html(listHtml);
+                } else {
+                    // 失败
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    initList();
+
+    // 执行删除
+    function doDel(cid) {
+        if (confirm("确定是否删除？")) {
+            // 参数效验
+            if (cid == null || cid == "") {
+                alert("删除失败：参数有误，请重试！");
+                return false;
+            }
+            jQuery.ajax({
+                url: req_base_url + "category/del",
+                method: "POST",
+                headers: {
+                    "Authorization": window.localStorage.getItem(token_key)
+                },
+                data: {"cid": cid},
+                success: function (res) {
+                    // 将执行的结果展示给用户
+                    if (res != null && res.code == 200 && res.data) {
+                        alert("恭喜：删除成功！");
+                        location.href = location.href;
+                    } else {
+                        // 失败
+                        alert("抱歉：操作失败！" + res.msg);
+                    }
+                }
+            });
+        }
+    }
+</script>
+</body>
+</html>

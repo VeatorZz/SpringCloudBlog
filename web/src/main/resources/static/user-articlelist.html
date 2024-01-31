@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>用户文章列表页</title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <style>
+        .card {
+            border-radius: 4px;
+            border: 1px solid #ebeef5;
+            background-color: #fff;
+            overflow: hidden;
+            color: #303133;
+            transition: .3s;
+            margin: 10px 0;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+            padding: 20px;
+        }
+    </style>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/urlutil.js"></script>
+    <script src="js/loginutil.js"></script>
+</head>
+<body>
+<nav id="navbar" class="navbar has-shadow">
+    <div class="container">
+        <div class="navbar-brand">
+            <div class="navbar-burger burger" data-target="navMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div id="navMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="index.html">主页</a>
+                <a class="navbar-item" href="about.html">关于</a>
+            </div>
+            <div class="navbar-end">
+                <div id="login_div" style="display: none;" class="navbar-item">
+                    <a id="category_href" style="display: none" class="button is-small is-primary" href="category.html">分类管理</a>&nbsp;&nbsp;&nbsp;
+                    <a class="button is-small is-primary" href="add-article.html">写文章</a>&nbsp;&nbsp;&nbsp;
+                    <a id="login_username" href="user-articlelist.html"></a>&nbsp;&nbsp;&nbsp;
+                    <a href="javascript:logout();">退出</a>
+                </div>
+                <div id="unlogin_div" class="navbar-item">
+                    <a class="button is-small is-primary" href="register.html">注册</a>&nbsp;&nbsp;&nbsp
+                    <a class="button is-small" href="login.html">登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+<script>
+    jQuery(function () {
+        var login_username = window.localStorage.getItem("username");
+        if (login_username == null) {
+            // 未登录
+            jQuery("#unlogin_div").show();
+        } else { // 已经登录
+            jQuery("#unlogin_div").hide();
+            jQuery("#login_username").html(login_username);
+            jQuery("#login_username").attr("href", "user-articlelist.html?uid=" +
+                window.localStorage.getItem("uid"));
+            jQuery("#login_div").show();
+            // 管理员权限判断
+            if (window.localStorage.getItem("manager") == 1) {
+                jQuery("#category_href").show();
+            }
+        }
+    });
+</script>
+
+<section class="hero is-primary is-bold">
+    <div class="hero-body">
+        <div class="container">
+            <h1 class="title" id="username">
+
+            </h1>
+            <h2 class="subtitle" id="email">
+
+            </h2>
+        </div>
+    </div>
+</section>
+<div class="container">
+    <div class="columns">
+        <div class="column is-8 is-offset-2" id="artlist">
+
+        </div>
+    </div>
+</div>
+<script>
+    var uid = getUrlParam("uid");
+    var loginUid = 0; // 当前登录用户id
+    // 初始化用户信息
+    function initUserinfo() {
+        jQuery.ajax({
+            url: req_base_url + "user/getbyuid",
+            method: "GET",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {
+                "uid": uid
+            },
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200 &&
+                    res.data != null && res.data.uid >= 0) {
+                    // 成功
+                    jQuery("#username").html(res.data.username);
+                    jQuery("#email").html(res.data.email);
+                    loginUid = res.data.loginUid;
+                } else {
+                    // 失败z
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    // 文章删除功能
+    function doArtDel(aid) {
+        if (confirm("是否确认删除?")) {
+            jQuery.ajax({
+                url: req_base_url + "art/delbyaid",
+                method: "POST",
+                headers: {
+                    "Authorization": window.localStorage.getItem(token_key)
+                },
+                data: {
+                    "aid": aid,
+                },
+                success: function (res) {
+                    // 将执行的结果展示给用户
+                    if (res != null && res.code == 200 && res.data) {
+                        // 成功
+                        alert("恭喜：删除成功！");
+                        location.href = location.href;
+                    } else {
+                        // 失败
+                        alert("抱歉：删除失败！" + res.msg);
+                    }
+                }
+            });
+        }
+    }
+
+    // 初始化用户的文章列表信息
+    function initUserArticleList() {
+        jQuery.ajax({
+            url: req_base_url + "art/getuserart",
+            method: "GET",
+            data: {
+                "uid": uid
+            },
+            success: function (res) {
+                // 将执行的结果展示给用户
+                if (res != null && res.code == 200 &&
+                    res.data != null && res.data.length >= 0) {
+                    // 成功
+                    var artHtml = "";
+                    var isowner = (uid == loginUid);
+                    for (var i = 0; i < res.data.length; i++) {
+                        var art = res.data[i];
+                        artHtml += '<div class="card margin-top">';
+                        artHtml += '<div class="card-content">';
+                        artHtml += '<div class="content">';
+                        artHtml += '<a href="detail.html?aid=' + art.aid +
+                            '">' + art.title + '</a>';
+                        artHtml += '</div>';
+                        artHtml += '</div>';
+                        if (isowner) {
+                            artHtml += '<footer class="card-footer">';
+                            artHtml += '<a href="edit-article.html?aid=' +
+                                art.aid + '" class="card-footer-item">修改</a>';
+                            artHtml += '<a href="javascript:doArtDel(' +
+                                art.aid + ');" class="card-footer-item">删除</a>';
+                            artHtml += '</footer>';
+                        }
+                        artHtml += '</div>';
+                    }
+                    jQuery("#artlist").html(artHtml);
+                } else {
+                    // 失败
+                    alert("抱歉：页面数据加载失败！" + res.msg);
+                }
+            }
+        });
+    }
+
+    // 初始化当前页面信息
+    function initPage() {
+        if (uid == null || uid <= 0) {
+            alert("参数有误，请重试！");
+            return false;
+        }
+        // 1.初始化用户信息
+        initUserinfo();
+        // 2.初始化用户的文章列表信息
+        initUserArticleList();
+    }
+
+    initPage();
+</script>
+</body>
+</html>
+

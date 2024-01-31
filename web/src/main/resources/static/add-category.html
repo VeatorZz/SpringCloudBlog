@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>添加分类</title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/loginutil.js"></script>
+</head>
+<body>
+<nav id="navbar" class="navbar has-shadow">
+    <div class="container">
+        <div class="navbar-brand">
+            <div class="navbar-burger burger" data-target="navMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div id="navMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="index.html">主页</a>
+                <a class="navbar-item" href="about.html">关于</a>
+            </div>
+            <div class="navbar-end">
+                <div id="login_div" style="display: none;" class="navbar-item">
+                    <a id="category_href" style="display: none" class="button is-small is-primary" href="category.html">分类管理</a>&nbsp;&nbsp;&nbsp;
+                    <a class="button is-small is-primary" href="add-article.html">写文章</a>&nbsp;&nbsp;&nbsp;
+                    <a id="login_username" href="user-articlelist.html"></a>&nbsp;&nbsp;&nbsp;
+                    <a href="javascript:logout();">退出</a>
+                </div>
+                <div id="unlogin_div" class="navbar-item">
+                    <a class="button is-small is-primary" href="register.html">注册</a>&nbsp;&nbsp;&nbsp
+                    <a class="button is-small" href="login.html">登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+<script>
+    jQuery(function () {
+        var login_username = window.localStorage.getItem("username");
+        if (login_username == null) {
+            // 未登录
+            jQuery("#unlogin_div").show();
+        } else { // 已经登录
+            jQuery("#unlogin_div").hide();
+            jQuery("#login_username").html(login_username);
+            jQuery("#login_username").attr("href", "user-articlelist.html?uid=" +
+                window.localStorage.getItem("uid"));
+            jQuery("#login_div").show();
+            // 管理员权限判断
+            if (window.localStorage.getItem("manager") == 1) {
+                jQuery("#category_href").show();
+            }
+        }
+    });
+</script>
+
+<div class="container margin-top">
+    <div class="columns">
+        <div class="column is-8 is-offset-2">
+            <div>
+                <div class="field">
+                    <label class="label">分类名</label>
+                    <div class="control">
+                        <input id="name" class="input" type="text" placeholder="微服务">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">描述</label>
+                    <div class="control">
+                        <textarea id="desc" class="textarea" placeholder="描述信息"></textarea>
+                    </div>
+                </div>
+                <button class="button is-primary" onclick="doAddCategory()">新建分类</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function doAddCategory() {
+        // 1.非空效验
+        var name = jQuery("#name");
+        if (name.val().trim() == "") {
+            alert("请先输入分类名！");
+            name.focus();
+            return false;
+        }
+        // 2.进行登录操作
+        jQuery.ajax({
+            url: req_base_url + "category/add",
+            method: "POST",
+            headers: {
+                "Authorization": window.localStorage.getItem(token_key)
+            },
+            data: {
+                "name": name.val(),
+                "desc": jQuery("#desc").val()
+            },
+            success: function (res) {
+                // 3.将执行的结果展示给用户
+                if (res != null && res.code == 200 && res.data) {
+                    // 执行成功
+                    alert("恭喜：分类添加成功！");
+                    location.href = "category.html";
+                } else {
+                    // 执行失败
+                    alert("抱歉：添加失败！" + res.msg);
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

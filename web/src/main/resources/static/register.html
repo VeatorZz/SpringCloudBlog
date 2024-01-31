@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>注册用户</title>
+    <meta name="keywords" content=""/>
+    <meta name="description" content="">
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/github-markdown.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/config.js"></script>
+</head>
+<body>
+<nav id="navbar" class="navbar has-shadow">
+    <div class="container">
+        <div id="navMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="index.html">主页</a>
+                <a class="navbar-item" href="about.html">关于</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <a class="button is-small is-primary" href="register.html">注册</a>
+                </div>
+                <div class="navbar-item">
+                    <a class="button is-small" href="login.html">登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="box sign-box">
+        <div>
+            <div class="field">
+                <label class="label">用户名</label>
+                <div class="control">
+                    <input class="input" id="username" type="text" placeholder="请输入用户名">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">邮箱</label>
+                <div class="control">
+                    <input class="input" id="email" type="email" placeholder="请输入你的邮箱">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">密码</label>
+                <div class="control">
+                    <input class="input" id="password" type="password" placeholder="请输入密码">
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">重复密码</label>
+                <div class="control">
+                    <input class="input" id="repassword" type="password" placeholder="确认你的密码">
+                </div>
+            </div>
+            <div class="field is-grouped">
+                <div class="control">
+                    <button class="button is-primary" onclick="doRegister()">立即注册</button>
+                </div>
+                <div class="control">
+                    <a href="login.html" class="button is-text">已有账号，去登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // 注册用户
+    function doRegister() {
+        // 1.非空效验
+        var username = jQuery("#username");
+        var email = jQuery("#email");
+        var password = jQuery("#password");
+        var repassword = jQuery("#repassword");
+        if (username.val().trim() == "") {
+            alert("请先输入用户名！");
+            username.focus();
+            return false;
+        }
+        if (email.val().trim() == "") {
+            alert("请先输入email！");
+            email.focus();
+            return false;
+        }
+        if (password.val().trim() == "") {
+            alert("请先输入密码！");
+            password.focus();
+            return false;
+        }
+        if (repassword.val().trim() == "") {
+            alert("请先输入确认密码！");
+            repassword.focus();
+            return false;
+        }
+        // 2.验证两次输入的密码
+        if (password.val() != repassword.val()) {
+            alert("两次输入的密码不一致，请先检查！");
+            return false;
+        }
+        // 3.ajax 请求后端
+        jQuery.ajax({
+            url: req_base_url + "user/add",
+            method: "POST",
+            data: {
+                "username": username.val(),
+                "email": email.val(),
+                "password": password.val()
+            },
+            success: function (res) {
+                // 4.将执行的结果展示给用户 {"code":200,"msg":"状态码描述信息","data":[]}
+                if (res != null && res.code == 200 && res.data) {
+                    // 注册成功
+                    alert("恭喜：注册成功！");
+                } else {
+                    // 注册失败
+                    alert("抱歉：注册失败！" + res.msg);
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
+
